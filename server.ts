@@ -18,11 +18,14 @@ import errorHandler from './src/middleware/error';
 
 const app: Application = express();
 
+app.use(express.json());
+
 // CORS Middleware
 enum BaseUrl {
   dev = 'http://127.0.0.1:3000',
-  prod = '',
+  prod = 'https://yourdomain.com',
 }
+
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' ? BaseUrl.prod : BaseUrl.dev,
   credentials: true,
@@ -48,6 +51,7 @@ app.use(
     name: '_sid',
     resave: false,
     saveUninitialized: false,
+
     cookie: {
       httpOnly: true,
       maxAge: 10 * 60 * 60 * 24 * 1000,
@@ -57,6 +61,7 @@ app.use(
   })
 );
 
+// All Router
 routeLoader(app);
 
 app.use(errorHandler);
@@ -77,7 +82,6 @@ process.on('unhandledRejection', (err: any, promise) => {
   console.log(
     colors.red.underline(`💥️ ` + `Unhanled Rejection Error:  ${err.message}`)
   );
-  // Close Server and Exit
   server.close(() => process.exit(1));
 });
 
