@@ -16,6 +16,14 @@ const signupUserSchema = Joi.object().keys({
     'any.required': 'Last name is required',
   }),
 
+  userName: Joi.string().min(3).max(35).required().messages({
+    'string.base': 'Username should be string',
+    'string.empty': 'Username is required',
+    'string.max': 'Username should be less than 35 letter',
+    'string.min': 'Username should be atleast 3 letter',
+    'any.required': 'Username is required',
+  }),
+
   email: Joi.string()
     .lowercase()
     .max(50)
@@ -45,6 +53,36 @@ const signupUserSchema = Joi.object().keys({
   userRole: Joi.string().required().messages({
     'string.empty': 'Role is required',
     'any.required': 'Role is required',
+  }),
+});
+
+const loginUserSchema = Joi.object().keys({
+  userName: Joi.string().min(3).max(35).optional().messages({
+    'string.base': 'Username should be string',
+    'string.empty': 'Username is required',
+    'string.max': 'Username should be less than 35 letter',
+    'string.min': 'Username should be atleast 3 letter',
+    'any.required': 'Username is required',
+  }),
+  email: Joi.string()
+    .lowercase()
+    .max(50)
+    .email({
+      minDomainSegments: 2,
+      tlds: {
+        allow: ['com', 'net', 'in', 'co', 'uk', 'biz', 'xyz', 'io'],
+      },
+    })
+    .optional()
+    .messages({
+      'string.empty': 'Please Provide a Valid Email address',
+      'string.required': 'Email is required',
+      'string.email': 'Please Provide a Valid Email address',
+    }),
+
+  password: Joi.string().required().messages({
+    'string.empty': 'Please Provide Password',
+    'string.required': 'Please Provide Password',
   }),
 });
 
@@ -101,4 +139,4 @@ const updateUserSchema = Joi.object().keys({
   }),
 });
 
-export { signupUserSchema, updateUserSchema };
+export { signupUserSchema, updateUserSchema, loginUserSchema };

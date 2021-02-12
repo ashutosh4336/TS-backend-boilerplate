@@ -1,16 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import asyncHandler from '../../middleware/async';
 import ErrorResponse from '../../utils/errorResponse';
-import generateSignedJwtToken from 'src/helper/jwtToken';
-import matchPassword from 'src/helper/matchPassword';
-import { signupUserSchema } from '../../validation/user';
+import generateSignedJwtToken from '../../helper/jwtToken';
+import matchPassword from '../../helper/matchPassword';
+import Role from '../../models/Role';
+import { signupUserSchema, loginUserSchema } from '../../validation/user';
 import User from '../../models/User';
+import mongoose, { Types } from 'mongoose';
 
 /**
  *
  * @desc        Test Route [SKIP / REMOVE THIS]
  * @route       GET /api/v1/auth/test
- * @access      Private
+ * @access      Public
  */
 const testAuth = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -25,15 +27,16 @@ const testAuth = asyncHandler(
 
 /**
  *
- * @desc        Test Route
- * @route       GET /api/v1/auth/test
- * @access      Private
+ * @desc        Register User
+ * @route       POST /api/v1/auth/register
+ * @access      Public
  */
 const signupUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    const role = await Role.find({});
     let message: any = '';
 
-    let { error, value } = signupUserSchema.validate(req.body, {
+    const { error, value } = signupUserSchema.validate(req.body, {
       abortEarly: false,
     });
 
@@ -43,60 +46,79 @@ const signupUser = asyncHandler(
           (message && `${message.replace(/phone/g, 'Contact Number')},`) +
           (a.message.replace(/\"/g, '') + '.');
       });
-
       return next(new ErrorResponse(message, 422));
     }
 
-    // const user = value;
-    const user = await User.create(value);
+    if (value.userRole.toUpperCase() === 'ADMIN') {
+      message = "Admin can't be Created";
+      return next(new ErrorResponse(message, 422));
+    }
 
-    return res.status(201).json({ msg: 'Signup successfull', data: user });
+    const extractUserRole: any = role.find(
+      (el: any) => el.value === value.userRole.toUpperCase()
+    );
+
+    if (!extractUserRole) {
+      message = 'Invalid User Type...';
+      return next(new ErrorResponse(message, 422));
+    }
+
+    const user: any = {
+      firstName: value.firstName,
+      lastName: value.lastName,
+      userName: value.userName,
+      email: value.email,
+      password: value.password,
+      phone: value.phone,
+      userRole: Types.ObjectId(extractUserRole?._id),
+    };
+
+    const createdUser = await User.create(user);
+
+    const toBeSentUser = {
+      _id: createdUser?._id,
+      firstName: createdUser?.firstName,
+      lastName: createdUser?.lastName,
+      userName: createdUser?.userName,
+      email: createdUser?.email,
+      userRole: extractUserRole?.value,
+      token: generateSignedJwtToken(createdUser, extractUserRole?.value),
+    };
+
+    return res
+      .status(201)
+      .json({ message: 'Signup successfull', code: 201, data: toBeSentUser });
   }
 );
 
-export { testAuth, signupUser };
+/**
+ *
+ * @desc        Login User
+ * @route       POST /api/v1/auth/login
+ * @access      Public
+ */
 
-/*
-const a = {
-  userRole: CastError: Cast to ObjectId failed for value "user" at path "userRole"
-      at ObjectId.cast (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/schema/objectid.js:281:11)
-      at ObjectId.SchemaType.applySetters (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/schematype.js:1088:12)
-      at model.$set (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/document.js:1269:20)
-      at model.$set (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/document.js:1013:16)
-      at model.Document (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/document.js:148:12)
-      at model.Model (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:105:12)
-      at new model (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:4700:15)
-      at /home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:3053:22
-      at /home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:3089:7
-      at Array.forEach (<anonymous>)
-      at /home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:3088:15
-      at /home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/helpers/promiseOrCallback.js:31:5
-      at new Promise (<anonymous>)
-      at promiseOrCallback (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/helpers/promiseOrCallback.js:30:10)
-      at Mongoose._promiseOrCallback (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/index.js:1135:10)
-      at Function.create (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:3023:23) {
-    stringValue: '"user"',
-    messageFormat: undefined,
-    kind: 'ObjectId',
-    value: 'user',
-    path: 'userRole',
-    reason: Error: Argument passed in must be a single String of 12 bytes or a string of 24 hex characters
-        at new ObjectID (/home/ashutosh/development/oAuthPassword/backend/node_modules/bson/lib/bson/objectid.js:59:11)
-        at castObjectId (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/cast/objectid.js:25:12)
-        at ObjectId.cast (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/schema/objectid.js:279:12)
-        at ObjectId.SchemaType.applySetters (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/schematype.js:1088:12)
-        at model.$set (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/document.js:1269:20)
-        at model.$set (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/document.js:1013:16)
-        at model.Document (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/document.js:148:12)
-        at model.Model (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:105:12)
-        at new model (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:4700:15)
-        at /home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:3053:22
-        at /home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:3089:7
-        at Array.forEach (<anonymous>)
-        at /home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/model.js:3088:15
-        at /home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/helpers/promiseOrCallback.js:31:5
-        at new Promise (<anonymous>)
-        at promiseOrCallback (/home/ashutosh/development/oAuthPassword/backend/node_modules/mongoose/lib/helpers/promiseOrCallback.js:30:10)
+const loginUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    let message: any = '';
+
+    const { error, value } = loginUserSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (!!error) {
+      error?.details.forEach((a, b) => {
+        message =
+          (message && `${message},`) + (a.message.replace(/\"/g, '') + '.');
+      });
+      return next(new ErrorResponse(message, 422));
+    }
+
+    const toBeSentUser = {};
+
+    return res
+      .status(201)
+      .json({ message: 'Login successfull', code: 201, data: toBeSentUser });
   }
-}
-*/
+);
+
+export { testAuth, signupUser, loginUser };

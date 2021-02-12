@@ -32,17 +32,15 @@ const errorHandler = (
 
   //   Mongoose Validation Error ValidationError
   if (err.name === 'ValidationError') {
-    if (!Array.isArray(err.errors)) {
-      message = err?._message ? err?._message : 'Please provide valid inputs';
-    } else {
-      message = Object.values(err.errors).map((val: any) => val.message);
-    }
+    message = Object.values(err.errors).map((val: any) => val.message);
     error = new ErrorResponse(message, 422);
   }
 
-  return res
-    .status(error.statusCode || 500)
-    .json({ sucess: false, error: error.message || 'Something Went Wrong' });
+  return res.status(error.statusCode || 500).json({
+    sucess: false,
+    code: error.statusCode || 500,
+    error: error.message || 'Something Went Wrong',
+  });
 };
 
 export default errorHandler;
