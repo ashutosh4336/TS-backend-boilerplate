@@ -1,6 +1,9 @@
 import { model, Schema, Model, Document } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
-import { IUserDocument } from '../interface/User';
+import { IUser } from '../interface/User';
+
+export const DOCUMENT_NAME = 'User';
+export const COLLECTION_NAME = 'users';
 
 const UserSchema: Schema = new Schema(
   {
@@ -19,15 +22,16 @@ const UserSchema: Schema = new Schema(
       required: [true, 'Please add a email'],
       unique: true,
       trim: true,
+      index: true,
       match: [
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
         'Please add a valid email',
       ],
     },
-    role: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+    userRole: {
+      type: Schema.Types.ObjectId,
+      ref: 'role',
+      required: true,
     },
     password: {
       type: String,
@@ -59,13 +63,12 @@ const UserSchema: Schema = new Schema(
   {
     timestamps: true,
     versionKey: false,
+    collection: COLLECTION_NAME,
   }
 );
 
 // Hash Password using bryptjs
-UserSchema.pre<IUserDocument>('save', async function (next): Promise<
-  string | void
-> {
+UserSchema.pre<IUser>('save', async function (next): Promise<string | void> {
   if (!this.isModified('password')) {
     next();
   }
@@ -75,4 +78,5 @@ UserSchema.pre<IUserDocument>('save', async function (next): Promise<
   next();
 });
 
-export default model<IUserDocument>('User', UserSchema);
+const User = model<IUser>(DOCUMENT_NAME, UserSchema);
+export default User;

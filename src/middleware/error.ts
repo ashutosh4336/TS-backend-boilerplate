@@ -14,8 +14,8 @@ const errorHandler = (
   error.message = err.message;
 
   // Log To Console For Developer
-  if (process.env.NODE_ENV === 'developemnt') {
-    console.log('Coming Into error file', colors.red(err.stack));
+  if (process.env.NODE_ENV === 'development') {
+    console.log(colors.red(err));
   }
 
   //   Mongoose bad ObejctID
@@ -30,9 +30,13 @@ const errorHandler = (
     error = new ErrorResponse(message, 422);
   }
 
-  //   Mongoose Validation Error
+  //   Mongoose Validation Error ValidationError
   if (err.name === 'ValidationError') {
-    message = Object.values(err.errors).map((val: any) => val.message);
+    if (!Array.isArray(err.errors)) {
+      message = err?._message ? err?._message : 'Please provide valid inputs';
+    } else {
+      message = Object.values(err.errors).map((val: any) => val.message);
+    }
     error = new ErrorResponse(message, 422);
   }
 

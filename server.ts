@@ -1,4 +1,4 @@
-import express, { Application } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import colors from 'colors';
 import cors from 'cors';
@@ -12,7 +12,7 @@ dotenv.config({ path: `./src/config/config.env` });
 import connectDB from './src/config/db';
 
 // Import Middleware
-import { userAgentCheck } from './src/middleware/userAgent';
+import { userAgentCheck, checkReqType } from './src/middleware/userAgent';
 import routeLoader from './src/middleware/router';
 import errorHandler from './src/middleware/error';
 
@@ -32,10 +32,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// User AgnetCheck
 app.use(userAgentCheck);
-
+app.use(checkReqType);
 // ConnectDB
 connectDB();
 
@@ -63,11 +61,20 @@ app.use(
 
 // All Router
 routeLoader(app);
-
+// Error Handler Middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+//Handle 404
+// No Route Should Go Ubder this Block
+app.use(function (req: Request, res: Response, next: NextFunction) {
+  return res.status(404).json({
+    success: false,
+    code: 404,
+    message: 'No Resource Found',
+  });
+});
 
+const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(
     `🚀 ` +
@@ -83,6 +90,16 @@ process.on('unhandledRejection', (err: any, promise) => {
     colors.red.underline(`💥️ ` + `Unhanled Rejection Error:  ${err.message}`)
   );
   server.close(() => process.exit(1));
+});
+
+process.on('uncaughtException', function (err) {
+  app.use(function (err: any, req: Request, res: Response, next: NextFunction) {
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: 'Something Bad Happened... Please retry again later',
+    });
+  });
 });
 
 process.on('SIGTERM', function (code) {

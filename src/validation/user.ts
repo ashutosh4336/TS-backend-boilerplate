@@ -27,9 +27,9 @@ const signupUserSchema = Joi.object().keys({
     })
     .required()
     .messages({
-      'string.empty': 'GitHub URL is required',
-      'string.required': 'GitHub URL required',
-      'string.email': 'GitHub URL required',
+      'string.empty': 'Please Provide a Valid Email address 1',
+      'string.required': 'Email is required',
+      'string.email': 'Please Provide a Valid Email address',
     }),
 
   phone: PhoneJoi.string().phoneNumber().min(10).max(20).required().messages({
@@ -42,12 +42,7 @@ const signupUserSchema = Joi.object().keys({
 
   password: Joi.string().required(),
 
-  githubUrl: Joi.string().allow(null, '').optional().messages({
-    'string.empty': 'GitHub URL is required',
-    'any.required': 'GitHub URL required',
-  }),
-
-  role: Joi.string().required().messages({
+  userRole: Joi.string().required().messages({
     'string.empty': 'Role is required',
     'any.required': 'Role is required',
   }),

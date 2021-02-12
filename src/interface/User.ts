@@ -1,17 +1,14 @@
 import mongoose, { Document, Model } from 'mongoose';
 
-export interface IUserDocument extends Document {
+export interface IUser extends Document {
   firstName: string;
   lastName: string;
   email: string;
-  role: string;
+  userRole: mongoose.Types.ObjectId | string;
   password: string;
   avatar?: string;
   isDeleted: boolean;
   confirmEmailToken: string;
   confirmEmailTokenExpire: string;
   varified: boolean;
-
-  comparePassword: (enteredPassword: string) => Promise<Boolean>;
-  getSignedJwtToken: string;
 }
